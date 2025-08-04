@@ -106,6 +106,10 @@ export default configure([
 			}],
 			// there are a few of these that make sense, in scripts
 			"no-useless-return": "off",
+			// turn off JS rule
+			"semi": "off",
+			// turn on TS rule as a warning
+			"@typescript-eslint/semi": ["warn", "always"],
 		},
 	},
 ]);
