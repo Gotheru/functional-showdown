@@ -7,29 +7,28 @@ import { URIS, Kind } from 'fp-ts/HKT'
 import { Functor1 } from 'fp-ts/Functor'
 import { Applicative1 } from 'fp-ts/Applicative'
 import { Monad1 } from 'fp-ts/Monad'
+import { Map } from 'immutable'
 
 // --- Distribution definition and constructors ---
 
 /**
  * A discrete probability distribution over values of type A.
+ * If A is a deep immutable type, works as expected with value equality.
+ * If A is a mutable type, then it will work using identity matching rather than value matching.
  */
 export interface Distribution<A> {
-	readonly pmf: Map<string, R.Rational>,    // probability mass function
-	readonly repr: Map<string, A>,          // string keys back to original values
+	readonly pmf: Map<A, R.Rational>,    // probability mass function (only works for immutable data types)
 }
 
 /** Construct a Distribution from a list of [value, weight] pairs. */
 export const fromPmf = <A>(entries: [A, R.Rational][]): Distribution<A> => {
-	const pmf = new Map<string, R.Rational>();
-	const repr = new Map<string, A>();
+	let pmf = Map<A, R.Rational>();
 	for (const [value, weight] of entries) {
-		const key = stringify(value);
-		const prev = pmf.get(key);
+		const prev = pmf.get(value);
 		const newWeight = prev ? R.add(prev, weight) : weight;
-		pmf.set(key, newWeight);
-		if (!repr.has(key)) repr.set(key, value);
+		pmf = pmf.set(value, newWeight);
 	}
-	return { pmf, repr };
+	return { pmf };
 };
 
 /** Deterministic distribution returning a single value. */
@@ -51,11 +50,9 @@ export const map = <A, B>(fa: Distribution<A>, f: (a: A) => B): Distribution<B> 
 export const flatMap = <A, B>(f: (a: A) => Distribution<B>) =>
 	(fa: Distribution<A>): Distribution<B> => {
 		const out: [B, R.Rational][] = []
-		for (const [keyA, pA] of fa.pmf) {
-			const a = fa.repr.get(keyA)!;
+		for (const [a, pA] of fa.pmf) {
 			const fb = f(a);
-			for (const [keyB, pB] of fb.pmf) {
-				const b = fb.repr.get(keyB)!;
+			for (const [b, pB] of fb.pmf) {
 				out.push([b, R.mul(pA, pB)]);
 			}
 		}
@@ -68,14 +65,14 @@ export const ap = <A, B>(fab: Distribution<(a: A) => B>, fa: Distribution<A>): D
 
 /** Get the probability for a specific outcome. */
 export const get = <A>(fa: Distribution<A>) =>
-	(a: A): R.Rational => fa.pmf.get(stringify(a)) || R.make(0n);
+	(a: A): R.Rational => fa.pmf.get(a) || R.make(0n);
 
 /** Predicate holds for all outcomes with non-zero probability. */
 export const all = <A>(p: P.Predicate<A>) =>
 	(fa: Distribution<A>): boolean => {
-		for (const [key, weight] of fa.pmf) {
+		for (const [a, weight] of fa.pmf) {
 			if (weight.n === 0n) continue;
-			if (!p(fa.repr.get(key)!)) return false;
+			if (!p(a)) return false;
 		}
 		return true;
 	}
