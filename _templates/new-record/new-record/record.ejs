@@ -1,0 +1,33 @@
+---
+to: functional/sim/<%= h.changeCase.pascal(name) %>.ts
+---
+import { BunkerRecord } from './bunker-record';
+
+export interface <%= h.changeCase.pascal(name) %>Params {
+<% props.split(',').forEach(pair => {
+    const [k, t] = pair.split(':').map(s => s.trim());
+%>  <%= k %>?: <%= t %>;
+<% }) %>}
+
+const _defaults: <%= h.changeCase.pascal(name) %>Params = {
+<% props.split(',').forEach(pair => {
+    const [k, t] = pair.split(':').map(s => s.trim());
+%>  <%- k %>: <%- (t === 'string' ? "''"
+        : t === 'number' ? '0'
+                : t === 'boolean' ? 'false'
+                        : 'undefined') %>,
+<% }) %>};
+
+export class <%= h.changeCase.pascal(name) %> extends BunkerRecord implements <%= h.changeCase.pascal(name) %>Params {
+<% props.split(',').forEach(pair => {
+    const [k, t] = pair.split(':').map(s => s.trim());
+%>  public readonly <%= k %>!: <%= t %>;
+<% }) %>
+  constructor(params?: <%= h.changeCase.pascal(name) %>Params) {
+    super(params ? { ..._defaults, ...params } : _defaults);
+  }
+
+  override with(updated: <%= h.changeCase.pascal(name) %>Params): <%= h.changeCase.pascal(name) %> {
+    return super.with(updated) as <%= h.changeCase.pascal(name) %>;
+  }
+}

@@ -80,6 +80,7 @@
     "eslint": "^9.31.0",
     "fast-check": "^4.2.0",
     "globals": "^16.0.0",
+    "hygen": "^6.2.11",
     "mocha": "^11.7.1",
     "smogon": "^3.0.0",
     "typescript": "^5.8.3",
